@@ -1,0 +1,5 @@
+{
+  "name": "Hotel Minibar Tracker",
+  "description": "An application for housekeeping and front desk staff to track minibar consumption and manage inventory replenishment in hotel rooms.",
+  "requestFramePermissions": []
+}
