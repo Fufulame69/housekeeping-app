@@ -3,6 +3,28 @@ import React, { useState, useMemo } from 'react';
 import type { Room, Receipt, ConsumedItem, ReplenishmentItem, Product } from '../types';
 import { PlusIcon, MinusIcon, ReceiptIcon } from './Icons';
 
+// Helper function to get the correct API base URL for images
+const getImageUrl = (imageUrl: string | undefined) => {
+    if (!imageUrl) return '';
+    
+    // If imageUrl already starts with http, return as is
+    if (imageUrl.startsWith('http')) {
+        return imageUrl;
+    }
+    
+    // Otherwise, construct the URL based on the current host
+    const currentHost = window.location.hostname;
+    const currentPort = window.location.port;
+    
+    // If accessing via IP (not localhost), use the same IP with API port
+    if (currentHost !== 'localhost' && currentHost !== '127.0.0.1') {
+        return `http://${currentHost}:3001${imageUrl}`;
+    }
+    
+    // Default for local development
+    return `http://localhost:3001${imageUrl}`;
+};
+
 interface RoomDetailProps {
   room: Room;
   products: Product[];
@@ -10,11 +32,27 @@ interface RoomDetailProps {
   onSubmit: (receipt: Receipt) => void;
 }
 
-const ProductImagePlaceholder: React.FC = () => (
-    <div className="w-16 h-16 bg-slate-200 rounded-md flex items-center justify-center">
-        <i className="fa-solid fa-image text-4xl text-slate-400" aria-hidden="true"></i>
-    </div>
-);
+const ProductImage: React.FC<{ imageUrl?: string, productName: string }> = ({ imageUrl, productName }) => {
+    if (imageUrl) {
+        return (
+            <img
+                src={getImageUrl(imageUrl)}
+                alt={productName}
+                className="w-40 h-40 object-cover rounded-md"
+                onError={(e) => {
+                    console.error('Product image failed to load:', imageUrl);
+                    e.currentTarget.src = '';
+                }}
+            />
+        );
+    }
+    
+    return (
+        <div className="w-40 h-40 bg-slate-200 rounded-md flex items-center justify-center">
+            <i className="fa-solid fa-image text-6xl text-slate-400" aria-hidden="true"></i>
+        </div>
+    );
+};
 
 export const RoomDetail: React.FC<RoomDetailProps> = ({ room, products, onBack, onSubmit }) => {
   const [consumedCount, setConsumedCount] = useState<{ [productId: string]: number }>({});
@@ -102,7 +140,7 @@ export const RoomDetail: React.FC<RoomDetailProps> = ({ room, products, onBack, 
             return (
               <li key={product.id} className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-4 w-full sm:w-auto">
-                    <ProductImagePlaceholder />
+                    <ProductImage imageUrl={product.imageUrl} productName={product.name} />
                     <div className="flex-grow">
                         <p className="font-semibold text-slate-800">{product.name}</p>
                         <p className="text-sm text-slate-500">${product.price.toFixed(2)} &bull; In Stock: <span className="font-medium text-slate-700">{availableStock - consumed}</span></p>

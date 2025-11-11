@@ -53,7 +53,18 @@ const App: React.FC = () => {
         setCurrentUser(user);
         const userRole = roles.find(role => role.id === user.roleId);
         const permissions = userRole ? userRole.permissions : [];
-        setCurrentView(permissions[0] || null);
+        // Set default view based on role priority
+        let defaultView: AppView | null = null;
+        if (permissions.includes(AppView.Admin)) {
+            defaultView = AppView.Admin;
+        } else if (permissions.includes(AppView.Management)) {
+            defaultView = AppView.Management;
+        } else if (permissions.includes(AppView.FrontDesk)) {
+            defaultView = AppView.FrontDesk;
+        } else if (permissions.includes(AppView.Rooms)) {
+            defaultView = AppView.Rooms;
+        }
+        setCurrentView(defaultView);
         setLoginError(null);
     } else {
         setLoginError("Invalid username or passkey.");
@@ -135,9 +146,9 @@ const App: React.FC = () => {
       }
   };
   
-  const handleAddProduct = async (name: string, price: number, standardStock: number) => {
+  const handleAddProduct = async (name: string, price: number, standardStock: number, imageUrl?: string) => {
       if(!name || !price || standardStock < 0) return alert("Valid product name, price, and stock are required.");
-      const newProduct: Product = { id: `prod-${Date.now()}`, name, price, standardStock };
+      const newProduct: Product = { id: `prod-${Date.now()}`, name, price, standardStock, imageUrl };
       await db.addProduct(newProduct);
 
       const currentRooms = await db.getRooms();
@@ -166,6 +177,17 @@ const App: React.FC = () => {
           await Promise.all(updatePromises);
           await loadData();
       }
+  };
+
+  const handleRemoveProductImage = async (productId: string) => {
+    // Update the product in the local state to remove the image
+    setProducts(prevProducts =>
+      prevProducts.map(product =>
+        product.id === productId
+          ? { ...product, imageUrl: undefined }
+          : product
+      )
+    );
   };
 
   // --- Admin Handlers ---
@@ -258,8 +280,8 @@ const App: React.FC = () => {
       case AppView.FrontDesk:
         return <FrontDeskView receipts={receipts} />;
       case AppView.Management:
-        return <ManagementView 
-          rooms={rooms} 
+        return <ManagementView
+          rooms={rooms}
           products={products}
           onAddRoom={handleAddRoom}
           onUpdateRoom={handleUpdateRoom}
@@ -268,6 +290,7 @@ const App: React.FC = () => {
           onAddProduct={handleAddProduct}
           onUpdateProduct={handleUpdateProduct}
           onDeleteProduct={handleDeleteProduct}
+          onRemoveProductImage={handleRemoveProductImage}
         />;
       case AppView.Rooms:
       default:

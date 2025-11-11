@@ -4,6 +4,7 @@ export interface Product {
   name: string;
   price: number;
   standardStock: number;
+  imageUrl?: string;
 }
 
 export interface Room {
